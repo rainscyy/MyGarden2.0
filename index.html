@@ -1,0 +1,1577 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MyGardens — Pixel Productivity</title>
+  <style>
+    :root {
+      --bg: #89c37f;
+      --panel: #f8f2dc;
+      --ink: #1b1b1b;
+      --accent: #f2c76e;
+      --good: #6fbe55;
+      --bad: #9a7c67;
+      --blue: #6fb8d9;
+      --tile: 28px;
+      --mint: #cfeec2;
+      --peach: #ffd7b8;
+      --lav: #dccbff;
+      --sky: #bde7ff;
+      --sun: #ffe79f;
+      --map-bg: linear-gradient(180deg, #7fc9de 0%, #4f97ab 24%, #2f6f74 50%, #245a59 72%, #1f4a3b 100%);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Courier New", monospace;
+      image-rendering: pixelated;
+      color: var(--ink);
+      background: #9fcd88;
+    }
+    .app {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      padding: 16px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    .panel {
+      background: #e9e7d7;
+      border: 3px solid #657b63;
+      box-shadow: 4px 4px 0 #7d8f74;
+    }
+    .left { padding: 18px; display:flex; flex-direction:column; gap:14px; background:#edf4dc; }
+    .main { padding: 14px; display:flex; flex-direction:column; gap:12px; background:#e4f0e2; }
+    h1, h2, h3, p { margin: 0; }
+    .muted { opacity: .72; font-size: 13px; }
+    .tabs { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .garden-picker-wrap { margin-left:auto; display:flex; align-items:center; gap:6px; }
+    .garden-label { font-size:18px; font-family: Georgia, "Times New Roman", serif; font-style: italic; color:#2f5b42; }
+    .garden-jump { font-size:14px; min-width:140px; background:#eaf7e5; }
+    .garden-picker-wrap.hidden { display:none; }
+    button, input, select {
+      font-family: inherit;
+      border: 2px solid #6d8167;
+      background: var(--mint);
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    button { cursor: pointer; font-weight: 700; }
+    button.active { background: var(--sun); }
+    .row { display:flex; gap:10px; align-items:center; }
+    .row > * { flex: 1; }
+    .stats { display:grid; grid-template-columns: repeat(2,1fr); gap:8px; }
+    .stat { border: 2px solid #6f8566; background:#f8ffef; padding:8px; font-size:12px; }
+    .stats .stat:nth-child(1){ background:var(--sky); }
+    .stats .stat:nth-child(2){ background:var(--lav); }
+    .stats .stat:nth-child(3){ background:var(--peach); }
+    .stats .stat:nth-child(4){ background:#d8f3ce; }
+    .bar { height: 12px; border:2px solid #6f8566; background:#e4e4e4; margin-top:4px; }
+    .bar > i { display:block; height:100%; background: #4fbf77; }
+
+    .viewport {
+      position: relative;
+      border: 3px solid #5f765e;
+      min-height: 560px;
+      background: var(--map-bg);
+      overflow: hidden;
+    }
+    #forestView {
+      min-height: 0;
+      padding: 6px;
+    }
+
+    .forest {
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      padding: 10px;
+      height: auto;
+      align-items: stretch;
+    }
+    .overview-bar {
+      display:flex;
+      gap:8px;
+      align-items:center;
+      justify-content:space-between;
+      border:2px solid #5f765e;
+      background:#cde6ff;
+      padding:8px;
+    }
+    .overview-tabs { display:flex; gap:6px; }
+    .overview-tabs button { padding:6px 10px; font-size:12px; }
+    .combined-forest {
+      position: relative;
+      flex: 1;
+      border:2px solid #5f765e;
+      background: var(--map-bg);
+      overflow:hidden;
+      width: 100%;
+      min-height: 520px;
+      margin: 0 auto;
+      cursor: grab;
+    }
+    .forest-focus-bg {
+      position:absolute;
+      left:50%;
+      top:115px;
+      width:560px;
+      height:290px;
+      transform:translateX(-50%);
+      background: var(--map-bg);
+      clip-path: polygon(50% 0, 96% 34%, 96% 74%, 50% 100%, 4% 74%, 4% 34%);
+      opacity:.88;
+      z-index:0;
+      pointer-events:none;
+    }
+    .forest-base { display:none; }
+    .g-cloud {
+      position:absolute;
+      width:72px;
+      height:28px;
+      z-index:2;
+      image-rendering: pixelated;
+      background: transparent;
+    }
+    .g-cloud::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 8' shape-rendering='crispEdges'><rect width='18' height='8' fill='none'/><rect x='1' y='5' width='16' height='2' fill='%2338a8bf'/><rect x='2' y='4' width='14' height='3' fill='%23f2f2e8'/><rect x='4' y='2' width='10' height='3' fill='%23f2f2e8'/><rect x='7' y='1' width='4' height='2' fill='%23f2f2e8'/><rect x='3' y='5' width='3' height='1' fill='%23d8ecea'/><rect x='11' y='4' width='3' height='1' fill='%23d8ecea'/></svg>");
+      background-repeat:no-repeat;
+      background-size:100% 100%;
+      opacity:.95;
+    }
+    .combined-forest:active { cursor: grabbing; }
+    .forest-camera {
+      position:absolute;
+      inset:0;
+      transform-origin: 50% 50%;
+      will-change: transform;
+    }
+    #gardenView { min-height: 620px; }
+    .f-cloud {
+      position:absolute;
+      width:64px;
+      height:24px;
+      z-index:1;
+      pointer-events:none;
+      image-rendering: pixelated;
+      background: transparent;
+      opacity:.9;
+      animation: cloudDrift 24s ease-in-out infinite;
+    }
+    .f-cloud::before {
+      content:"";
+      position:absolute;
+      inset:0;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 8' shape-rendering='crispEdges'><rect width='18' height='8' fill='none'/><rect x='1' y='5' width='16' height='2' fill='%2338a8bf'/><rect x='2' y='4' width='14' height='3' fill='%23f2f2e8'/><rect x='4' y='2' width='10' height='3' fill='%23f2f2e8'/><rect x='7' y='1' width='4' height='2' fill='%23f2f2e8'/><rect x='3' y='5' width='3' height='1' fill='%23d8ecea'/><rect x='11' y='4' width='3' height='1' fill='%23d8ecea'/></svg>");
+      background-repeat:no-repeat;
+      background-size:100% 100%;
+      opacity:.92;
+    }
+    .cluster { position:absolute; inset:0; pointer-events:none; }
+    .cluster > * { pointer-events:auto; }
+    .cluster.academic { animation: driftA 12s ease-in-out infinite; }
+    .cluster.health { animation: driftB 13s ease-in-out infinite; }
+    .cluster.work { animation: driftC 14s ease-in-out infinite; }
+    .cluster.social { animation: driftB 12.5s ease-in-out infinite reverse; }
+    .cluster.growth { animation: driftA 13.5s ease-in-out infinite reverse; }
+    .cluster.creative { animation: driftC 15s ease-in-out infinite; }
+
+    .f-tile { position:absolute; width:36px; height:18px; clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%); background:#7dbc60; border:1px solid rgba(0,0,0,.18); }
+    .f-tile.side { height:10px; clip-path: polygon(0 0,100% 0,86% 100%,14% 100%); background:#5e9248; }
+    .cluster.academic .f-tile { background:#73b590; }
+    .cluster.academic .f-tile.side { background:#5a9274; }
+    .cluster.health .f-tile { background:#7fbe74; }
+    .cluster.health .f-tile.side { background:#5f9755; }
+    .cluster.work .f-tile { background:#90c06a; }
+    .cluster.work .f-tile.side { background:#719850; }
+    .cluster.social .f-tile { background:#79b886; }
+    .cluster.social .f-tile.side { background:#5d9270; }
+    .cluster.growth .f-tile { background:#8ec07a; }
+    .cluster.growth .f-tile.side { background:#6e9960; }
+    .cluster.creative .f-tile { background:#a0c86f; }
+    .cluster.creative .f-tile.side { background:#7ea055; }
+    .f-tree { position:absolute; width:18px; height:22px; transform:translate(-50%,-95%); }
+    .f-tree .sprite { width:100%; height:100%; background-size:100% 100%; }
+    .f-plant { position:absolute; width:20px; height:20px; transform:translate(-50%,-85%); }
+    .f-plant .sprite { width:100%; height:100%; background-size:100% 100%; }
+    .region-tag {
+      position:absolute;
+      border:2px solid #5f765e;
+      background:#e8f2dc;
+      font-size:11px;
+      padding:2px 6px;
+      cursor:pointer;
+    }
+
+    .garden-wrap { position:absolute; inset:0; overflow:hidden; }
+    .garden-camera {
+      position:absolute;
+      inset:0;
+      transform-origin: 50% 50%;
+      will-change: transform;
+      cursor: grab;
+    }
+    .garden-camera:active { cursor: grabbing; }
+    .grid {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 980px;
+      height: 620px;
+      margin: 0;
+      transform: translate(-50%, -50%);
+      background: var(--map-bg);
+      border:3px solid #4f6f45;
+      overflow:hidden;
+    }
+    .garden-focus-bg {
+      position:absolute;
+      left:50%;
+      top:130px;
+      width:760px;
+      height:350px;
+      transform:translateX(-50%);
+      background: var(--map-bg);
+      clip-path: polygon(50% 0, 96% 30%, 96% 74%, 50% 100%, 4% 74%, 4% 30%);
+      opacity:.88;
+      z-index: 1;
+      pointer-events:none;
+    }
+    .land-base { display:none; }
+    .tile {
+      position:absolute;
+      width: 48px;
+      height: 24px;
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+      border:1px solid rgba(0,0,0,.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    .tile.soil { background: #956746; }
+    .tile.path { background: #c8b89c; }
+    .tile.water { background: #5db3d6; }
+    .tile.grass {
+      background:
+        repeating-linear-gradient(0deg, #78bc57 0 4px, #74b354 4px 8px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0 2px, transparent 2px 6px);
+    }
+
+    .tile-side {
+      position:absolute;
+      width:48px;
+      height:12px;
+      clip-path: polygon(0 0, 100% 0, 86% 100%, 14% 100%);
+      filter: brightness(.86);
+      border:1px solid rgba(0,0,0,.12);
+    }
+    .tile-side.soil { background:#7a4d34; }
+    .tile-side.path { background:#a99882; }
+    .tile-side.water { background:#4d98b5; }
+    .tile-side.grass { background:#5f9645; }
+
+    .deco {
+      position:absolute;
+      width: 10px;
+      height: 10px;
+      z-index: 2000;
+      image-rendering: pixelated;
+    }
+    .deco.grass { background:#4f8f47; }
+    .deco.rock { background:#8d9388; }
+    .deco.flower { background:#f3d36c; }
+    .deco.bush { background:#5b9f4c; width:14px; height:10px; }
+    .deco.fence { background:#9c7a55; width:12px; height:4px; }
+    .deco.sign { background:#c6b089; width:8px; height:8px; }
+    .g-tree { position:absolute; width:24px; height:30px; transform:translate(-50%,-95%); z-index:1400; }
+    .g-tree .sprite { width:100%; height:100%; background-size:100% 100%; }
+    .g-tree.tree1 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='9' width='2' height='5' fill='%23745439'/><rect x='4' y='4' width='8' height='5' fill='%2359ab4f'/><rect x='5' y='3' width='6' height='2' fill='%236dc562'/></svg>"); }
+    .g-tree.tree2 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='8' width='2' height='6' fill='%23745439'/><rect x='6' y='3' width='4' height='2' fill='%2359aa4f'/><rect x='5' y='5' width='6' height='2' fill='%234d9b45'/><rect x='4' y='7' width='8' height='2' fill='%23418d3b'/></svg>"); }
+
+    .plant {
+      position:absolute;
+      width:46px;
+      height:46px;
+      transform: translate(-50%, -88%);
+      image-rendering: pixelated;
+      animation: pop .18s steps(2);
+      cursor: pointer;
+    }
+    .plant-label {
+      position:absolute;
+      left:50%; top:-14px;
+      transform:translateX(-50%);
+      background:rgba(255,255,255,.9);
+      border:1px solid #000;
+      font-size:10px;
+      padding:1px 4px;
+      white-space:nowrap;
+      max-width:160px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      display:none;
+      pointer-events:none;
+    }
+    .plant:hover .plant-label { display:block; }
+    .sprite { width:100%; height:100%; background-size:100% 100%; background-repeat:no-repeat; }
+    .flower1 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='7' width='2' height='5' fill='%232f6a25'/><rect x='6' y='11' width='4' height='2' fill='%234d9231'/><rect x='5' y='5' width='2' height='2' fill='%23ff76b0'/><rect x='7' y='4' width='2' height='2' fill='%23ffb4d5'/><rect x='9' y='5' width='2' height='2' fill='%23ff76b0'/><rect x='7' y='6' width='2' height='2' fill='%23ffd6e8'/></svg>"); }
+    .flower2 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='6' width='2' height='6' fill='%232d6524'/><rect x='6' y='11' width='4' height='2' fill='%234e9632'/><rect x='5' y='4' width='2' height='2' fill='%2368b9ff'/><rect x='7' y='3' width='2' height='2' fill='%23a5d2ff'/><rect x='9' y='4' width='2' height='2' fill='%2368b9ff'/><rect x='7' y='5' width='2' height='2' fill='%23d7ecff'/></svg>"); }
+    .flower3 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='6' width='2' height='6' fill='%232b6123'/><rect x='6' y='11' width='4' height='2' fill='%234b8f30'/><rect x='5' y='4' width='2' height='2' fill='%23ffd166'/><rect x='7' y='3' width='2' height='2' fill='%23ffe39c'/><rect x='9' y='4' width='2' height='2' fill='%23ffd166'/><rect x='7' y='5' width='2' height='2' fill='%23fff0c7'/></svg>"); }
+    .flower4 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='7' width='2' height='5' fill='%23306524'/><rect x='6' y='11' width='4' height='2' fill='%23549b35'/><rect x='5' y='5' width='2' height='2' fill='%23c789ff'/><rect x='7' y='4' width='2' height='2' fill='%23e1c2ff'/><rect x='9' y='5' width='2' height='2' fill='%23c789ff'/><rect x='7' y='6' width='2' height='2' fill='%23f1e4ff'/></svg>"); }
+    .tree1 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='8' width='2' height='5' fill='%2375543b'/><rect x='4' y='4' width='8' height='5' fill='%2356a94b'/><rect x='3' y='5' width='10' height='2' fill='%2346963f'/></svg>"); }
+    .tree2 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='8' width='2' height='5' fill='%23735137'/><rect x='6' y='3' width='4' height='2' fill='%2358aa4e'/><rect x='5' y='5' width='6' height='2' fill='%23469a43'/><rect x='4' y='7' width='8' height='2' fill='%233f8d3a'/></svg>"); }
+    .tree3 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='8' width='2' height='5' fill='%2376533a'/><rect x='4' y='4' width='8' height='5' fill='%23ffb95d'/><rect x='5' y='5' width='6' height='3' fill='%23f38e3c'/></svg>"); }
+    .tree4 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='8' width='2' height='5' fill='%23765239'/><rect x='4' y='4' width='8' height='4' fill='%23f7cadf'/><rect x='5' y='5' width='6' height='3' fill='%23f4e0ef'/></svg>"); }
+    .bush1 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='3' y='8' width='10' height='4' fill='%23489841'/><rect x='4' y='6' width='8' height='3' fill='%235bad4e'/><rect x='5' y='5' width='6' height='2' fill='%236dc262'/></svg>"); }
+    .bush2 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='3' y='8' width='10' height='4' fill='%23438f3e'/><rect x='4' y='6' width='8' height='3' fill='%23529f48'/><rect x='5' y='7' width='1' height='1' fill='%23ff6f79'/><rect x='10' y='7' width='1' height='1' fill='%23ff6f79'/><rect x='8' y='6' width='1' height='1' fill='%23ff6f79'/></svg>"); }
+    .vine1 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='5' width='2' height='7' fill='%233d7f35'/><rect x='5' y='6' width='2' height='2' fill='%235aac50'/><rect x='9' y='7' width='2' height='2' fill='%235aac50'/><rect x='4' y='9' width='2' height='2' fill='%236bc761'/><rect x='10' y='10' width='2' height='2' fill='%236bc761'/></svg>"); }
+    .flower5 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='6' width='2' height='7' fill='%234b9443'/><rect x='6' y='9' width='1' height='1' fill='%234b9443'/><rect x='9' y='9' width='1' height='1' fill='%234b9443'/><rect x='6' y='4' width='4' height='2' fill='%23ffd05b'/></svg>"); }
+    .flower6 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='6' width='2' height='7' fill='%23479840'/><rect x='5' y='4' width='2' height='2' fill='%23f8b7c8'/><rect x='7' y='3' width='2' height='2' fill='%23ffd9e2'/><rect x='9' y='4' width='2' height='2' fill='%23f8b7c8'/></svg>"); }
+    .flower7 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='5' width='2' height='8' fill='%23458f3f'/><rect x='6' y='4' width='4' height='2' fill='%23e56a56'/><rect x='7' y='3' width='2' height='1' fill='%23f59a7c'/></svg>"); }
+    .flower8 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='5' width='2' height='8' fill='%2347923f'/><rect x='6' y='4' width='1' height='3' fill='%239f77d6'/><rect x='8' y='3' width='1' height='4' fill='%23be9ae7'/><rect x='10' y='4' width='1' height='3' fill='%239f77d6'/></svg>"); }
+    .flower9 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='6' width='2' height='7' fill='%23479442'/><rect x='5' y='5' width='2' height='2' fill='%23d6eef6'/><rect x='7' y='4' width='2' height='2' fill='%23ffffff'/><rect x='9' y='5' width='2' height='2' fill='%23d6eef6'/></svg>"); }
+    .flower10 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='5' width='2' height='8' fill='%23408a3b'/><rect x='6' y='3' width='4' height='3' fill='%23a97ad8'/><rect x='7' y='2' width='2' height='1' fill='%23cfb4ef'/></svg>"); }
+    .flower11 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='5' width='2' height='8' fill='%23458f3f'/><rect x='6' y='3' width='4' height='2' fill='%23ffcb4d'/><rect x='7' y='2' width='2' height='1' fill='%23ffe38f'/></svg>"); }
+    .flower12 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='4' width='2' height='9' fill='%23458f3f'/><rect x='6' y='5' width='1' height='1' fill='%23458f3f'/><rect x='9' y='7' width='1' height='1' fill='%23458f3f'/><rect x='7' y='2' width='2' height='2' fill='%23f5e9f0'/></svg>"); }
+    .flower13 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='4' width='2' height='9' fill='%23428b3d'/><rect x='6' y='3' width='4' height='2' fill='%23ff9f55'/></svg>"); }
+    .flower14 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='4' width='2' height='9' fill='%23438b3d'/><rect x='5' y='3' width='2' height='2' fill='%23b8d8ff'/><rect x='7' y='2' width='2' height='2' fill='%23e6f3ff'/><rect x='9' y='3' width='2' height='2' fill='%23b8d8ff'/></svg>"); }
+    .flower15 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='4' width='2' height='9' fill='%23448f3f'/><rect x='6' y='2' width='4' height='3' fill='%23e88bd9'/></svg>"); }
+    .flower16 .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='3' width='2' height='10' fill='%2341863a'/><rect x='6' y='2' width='4' height='2' fill='%23fff07a'/></svg>"); }
+    .withered .sprite { background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'><rect width='16' height='16' fill='none'/><rect x='7' y='8' width='2' height='5' fill='%23301f18'/><rect x='6' y='12' width='4' height='2' fill='%23422c21'/><rect x='5' y='6' width='2' height='2' fill='%23422c21'/><rect x='9' y='5' width='2' height='2' fill='%23422c21'/><rect x='6' y='4' width='1' height='2' fill='%23523629'/><rect x='10' y='4' width='1' height='2' fill='%23523629'/><rect x='7' y='6' width='2' height='2' fill='%23654434'/></svg>"); filter: saturate(.3) brightness(.78); }
+    .withered { transform: translate(-50%, -88%) scale(1.15); }
+    .s2 { transform: translate(-50%, -90%) scale(1.1); }
+    .s3 { transform: translate(-50%, -92%) scale(1.22); }
+
+    .task-list { max-height: 360px; overflow:auto; border:2px solid #6a8167; background:#f1f3e8; padding:10px; }
+    .task {
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+      padding:12px;
+      border:1px solid #c7d3c1;
+      margin-bottom:10px;
+      font-size:13px;
+      background:#f7faef;
+    }
+    .task:nth-child(2n){ background:#edf7ff; }
+    .task-top { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+    .task-title { max-width: 100%; line-height:1.35; word-break:break-word; }
+    .task-focus { display:flex; align-items:center; gap:6px; margin-top:6px; }
+    .focus-pick { border:1px solid #7e9574; background:#d9ecff; padding:3px 7px; font-size:12px; }
+    .focus-pick.active { background:#ffe79f; }
+    .task-bottom { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+    .task-actions { display:flex; flex-wrap:nowrap; gap:10px; align-items:center; }
+    .action-check { display:flex; align-items:center; gap:5px; font-size:12px; border:1px solid #7e9574; padding:4px 6px; background:#eef8e8; }
+    .action-check.bad { background:#f6e3db; }
+    .task-actions input[type="checkbox"] { width:14px; height:14px; }
+    .icon-btn { border:1px solid #7e9574; background:#ffe7d6; padding:5px 8px; font-size:14px; line-height:1; }
+    .task:last-child { border-bottom: 0; }
+    .task.done .t { text-decoration: line-through; opacity:.65; }
+    .chip { font-size:11px; padding:4px 8px; border:1px solid rgba(95,130,130,.35); background:#eef7f6; }
+    .chip.good { background:#c7f3b6; }
+    .chip.bad { background:#f4c8b8; }
+
+    .timer { border:2px solid #6a8167; background:#f1f3e8; padding:12px; text-align:center; }
+    .big { font-size: 34px; font-weight:700; }
+    .focus-meta { font-size:12px; color:#35503d; min-height:16px; margin-top:4px; }
+    .focus-float {
+      position:absolute;
+      top:14px;
+      right:14px;
+      z-index:3000;
+      width:250px;
+      padding:12px;
+      border:2px solid #6a8167;
+      background:#eff7e9;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+    }
+    .focus-shell {
+      width:182px;
+      height:182px;
+      border-radius:999px;
+      border:4px solid #6a8167;
+      background:#e7f3de;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      text-align:center;
+      padding:10px;
+    }
+    .focus-orb {
+      width:66px;
+      height:66px;
+      border-radius:999px;
+      border:4px solid #6a8167;
+      background: conic-gradient(#58b66f calc(var(--pct, 20) * 1%), #d8e8d3 0);
+      display:grid;
+      place-items:center;
+      padding:0;
+    }
+    .focus-orb .sprite { width:36px; height:36px; background-size:100% 100%; background-repeat:no-repeat; }
+    .focus-orb.withered { transform:none !important; position:static !important; }
+    .focus-slider { width: 100%; accent-color:#4e9d5f; }
+    .focus-mini { font-size:12px; text-align:center; }
+    .focus-actions { display:grid; grid-template-columns: repeat(2, 1fr); gap:6px; width:100%; }
+    .focus-actions button { padding:8px 6px; font-size:18px; }
+    .pause-btn { background:var(--mint); }
+    .fail-btn { background:#f4c8b8; }
+    .focus-shell .big { font-size: 22px; }
+    .focus-orb.withered .sprite { transform:none; filter: saturate(.3) brightness(.78); }
+
+    .hidden { display:none !important; }
+
+    .plant-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 37, 38, .34);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+    .plant-modal.open { display:flex; }
+    .plant-card {
+      width: min(420px, 94vw);
+      background: #edf2e6;
+      padding: 16px;
+      border: 3px solid #667d61;
+      box-shadow: 4px 4px 0 #7f916f;
+    }
+    .plant-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .logo-circle {
+      width: 128px;
+      height: 128px;
+      border-radius: 999px;
+      background: #a7d49f;
+      border: 3px solid #6b8a64;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+    }
+    .logo-circle.bad {
+      background: #c6b6a6;
+    }
+    .hero-plant {
+      position: static;
+      width: 80px;
+      height: 80px;
+      transform: none;
+      animation: none;
+    }
+    .hero-plant .sprite { transform: scale(1.8); transform-origin: center; }
+
+    .particle {
+      position:absolute;
+      width:6px;
+      height:6px;
+      pointer-events:none;
+      z-index:1600;
+    }
+    .particle.spark { background:#fff2a8; box-shadow:0 0 4px #fff6c6; animation: sparkTwinkle 2.4s ease-in-out infinite; }
+    .particle.dust { background:#8f7a69; animation: dustDrift 3.2s ease-in-out infinite; opacity:.8; }
+    .f-particle { position:absolute; width:5px; height:5px; pointer-events:none; z-index:30; }
+    .f-particle.spark { background:#fff0a0; box-shadow:0 0 3px #fff6c6; animation: sparkTwinkle 2.2s ease-in-out infinite; }
+    .f-particle.dust { background:#8e7767; animation: dustDrift 3s ease-in-out infinite; }
+
+    @keyframes cloudDrift {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(5px,-3px); }
+    }
+    @keyframes driftA {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(6px,-5px); }
+    }
+    @keyframes driftB {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(-5px,6px); }
+    }
+    @keyframes driftC {
+      0%,100% { transform: translate(0,0); }
+      50% { transform: translate(4px,7px); }
+    }
+    @keyframes sparkTwinkle {
+      0%,100% { opacity:.15; transform: translateY(0); }
+      50% { opacity:.95; transform: translateY(-2px); }
+    }
+    @keyframes dustDrift {
+      0%,100% { opacity:.2; transform: translate(0,0); }
+      50% { opacity:.55; transform: translate(2px,-2px); }
+    }
+
+    @keyframes pop {
+      from { transform: translate(-50%, -88%) scale(.6); opacity:.3; }
+      to { transform: translate(-50%, -88%) scale(1); opacity:1; }
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .viewport { min-height: 420px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="panel left">
+      <h1>MyGardens</h1>
+      <p class="muted">Focus grows life. Avoidance leaves traces.</p>
+
+      <div class="stats">
+        <div class="stat">XP: <b id="xp">0</b><div class="bar"><i id="xpBar" style="width:0%"></i></div></div>
+        <div class="stat">Streak: <b id="streak">0</b> 🌱</div>
+        <div class="stat">Level: <b id="level">1</b></div>
+        <div class="stat">Today: <b id="today">0</b> done</div>
+      </div>
+
+      <h3>New Task</h3>
+      <div class="row">
+        <input id="taskInput" placeholder="Read 20 pages" maxlength="80" />
+      </div>
+      <div class="row">
+        <select id="cat">
+          <option>Academic</option>
+          <option>Health</option>
+          <option>Work</option>
+          <option>Social</option>
+          <option>Growth</option>
+          <option>Creative</option>
+        </select>
+        <button id="addTask">Add</button>
+      </div>
+      <div class="row">
+        <button id="seedAcademic">Load Academic Pending Tasks</button>
+      </div>
+
+      <h3>Tasks</h3>
+      <div class="task-list" id="taskList"></div>
+    </aside>
+
+    <main class="panel main">
+      <div class="tabs">
+        <button class="active" id="tabForest">Forest</button>
+        <button id="tabGarden">Garden Land</button>
+        <button id="zoomOut">-</button>
+        <span class="chip" id="zoomLabel">100%</span>
+        <button id="zoomIn">+</button>
+        <button id="zoomReset">Center</button>
+        <div class="garden-picker-wrap">
+          <label for="gardenJump" class="garden-label">Garden:</label>
+          <select id="gardenJump" class="garden-jump">
+            <option>Academic</option>
+            <option>Health</option>
+            <option>Work</option>
+            <option>Social</option>
+            <option>Growth</option>
+            <option>Creative</option>
+          </select>
+        </div>
+      </div>
+
+      <section class="viewport" id="forestView">
+        <div class="forest" id="forestGrid"></div>
+      </section>
+
+      <section class="viewport hidden" id="gardenView">
+        <div class="garden-wrap" id="gardenWrap">
+          <div class="garden-camera" id="gardenCamera">
+            <div class="grid" id="gardenGrid"></div>
+          </div>
+        </div>
+        <div class="focus-float" id="focusFloat">
+          <div class="focus-shell">
+            <div class="big" id="clock">25:00</div>
+            <button id="focusPlantBtn" class="focus-orb" title="Click to start focus"><div class="sprite"></div></button>
+          </div>
+          <div class="focus-mini" id="focusTaskLabel">Focusing: No task selected</div>
+          <input id="floatDuration" class="focus-slider" type="range" min="5" max="120" step="5" value="25" />
+          <div class="focus-mini" id="durationLabel">Duration: 25 min</div>
+          <div class="focus-mini" id="floatDurationLabel">25 min</div>
+          <div class="focus-actions">
+            <button id="startFocus" title="Start">▶️</button>
+            <button id="pauseFocus" class="pause-btn" title="Pause">⏸️</button>
+            <button id="completeFocus" title="Complete">✅</button>
+            <button id="failFocus" class="fail-btn" title="Fail (wither)">❌</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="plant-modal" id="plantModal">
+    <div class="plant-card">
+      <div class="plant-head">
+        <h3>Plant Details</h3>
+        <button id="closePlantModal">Close</button>
+      </div>
+      <div class="row" style="align-items:flex-start; gap:14px;">
+        <div id="plantLogo" class="logo-circle"></div>
+        <div style="flex:1; line-height:1.7;">
+          <div><b id="infoTask">—</b></div>
+          <div class="muted" id="infoPlantName">Plant: —</div>
+          <div class="muted" id="infoCategory">Category: —</div>
+          <div class="muted" id="infoTime">Focused at: —</div>
+          <div class="muted" id="infoDuration">Duration: —</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const KEY = 'mygardens_v1';
+    const categories = ['Academic','Health','Work','Social','Growth','Creative'];
+
+    const state = loadState();
+    let selectedTaskId = null;
+    let selectedPlantId = null;
+    let timer = null;
+    let focusDurationMin = 25;
+    let timerSeconds = focusDurationMin * 60;
+    const camera = { x: 0, y: 0, scale: 1 };
+    const forestCamera = { x: 0, y: 0, scale: 1 };
+
+    const el = {
+      xp: document.getElementById('xp'),
+      xpBar: document.getElementById('xpBar'),
+      level: document.getElementById('level'),
+      streak: document.getElementById('streak'),
+      today: document.getElementById('today'),
+      taskInput: document.getElementById('taskInput'),
+      cat: document.getElementById('cat'),
+      taskList: document.getElementById('taskList'),
+      forestGrid: document.getElementById('forestGrid'),
+      gardenGrid: document.getElementById('gardenGrid'),
+      gardenJump: document.getElementById('gardenJump'),
+      gardenPickerWrap: document.querySelector('.garden-picker-wrap'),
+      clock: document.getElementById('clock'),
+      durationLabel: document.getElementById('durationLabel'),
+      focusTaskLabel: document.getElementById('focusTaskLabel'),
+      focusPlantBtn: document.getElementById('focusPlantBtn'),
+      floatDuration: document.getElementById('floatDuration'),
+      floatDurationLabel: document.getElementById('floatDurationLabel'),
+      forestView: document.getElementById('forestView'),
+      gardenView: document.getElementById('gardenView'),
+      gardenWrap: document.getElementById('gardenWrap'),
+      gardenCamera: document.getElementById('gardenCamera'),
+      tabForest: document.getElementById('tabForest'),
+      tabGarden: document.getElementById('tabGarden'),
+      zoomIn: document.getElementById('zoomIn'),
+      zoomOut: document.getElementById('zoomOut'),
+      zoomReset: document.getElementById('zoomReset'),
+      zoomLabel: document.getElementById('zoomLabel'),
+      plantLogo: document.getElementById('plantLogo'),
+      infoTask: document.getElementById('infoTask'),
+      infoPlantName: document.getElementById('infoPlantName'),
+      infoCategory: document.getElementById('infoCategory'),
+      infoTime: document.getElementById('infoTime'),
+      infoDuration: document.getElementById('infoDuration'),
+      plantModal: document.getElementById('plantModal'),
+      closePlantModal: document.getElementById('closePlantModal'),
+    };
+
+    document.getElementById('addTask').onclick = addTask;
+    document.getElementById('seedAcademic').onclick = seedAcademicExamples;
+    el.floatDuration.oninput = () => adjustDurationTo(+el.floatDuration.value);
+    el.focusPlantBtn.onclick = () => startFocus();
+    document.getElementById('startFocus').onclick = startFocus;
+    document.getElementById('pauseFocus').onclick = pauseFocus;
+    document.getElementById('completeFocus').onclick = () => finishSelected('done');
+    document.getElementById('failFocus').onclick = () => finishSelected('failed');
+    el.tabForest.onclick = () => switchTab('forest');
+    el.tabGarden.onclick = () => switchTab('garden');
+    el.gardenJump.onchange = () => {
+      state.activeCategory = el.gardenJump.value;
+      save();
+      renderGarden();
+      switchTab('garden');
+    };
+    el.zoomIn.onclick = () => setZoom(camera.scale + 0.1);
+    el.zoomOut.onclick = () => setZoom(camera.scale - 0.1);
+    el.zoomReset.onclick = () => resetCamera();
+    el.closePlantModal.onclick = () => el.plantModal.classList.remove('open');
+    el.plantModal.onclick = (e) => { if (e.target === el.plantModal) el.plantModal.classList.remove('open'); };
+    bindCameraDrag();
+
+    function loadState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(KEY) || '{}');
+        return {
+          xp: parsed.xp || 0,
+          streak: parsed.streak || 0,
+          level: parsed.level || 1,
+          lastDoneDate: parsed.lastDoneDate || null,
+          tasks: parsed.tasks || [],
+          plants: parsed.plants || [],
+          activeCategory: parsed.activeCategory || 'Health',
+          sessions: parsed.sessions || []
+        };
+      } catch {
+        return { xp:0, streak:0, level:1, lastDoneDate:null, tasks:[], plants:[], activeCategory:'Health', sessions:[] };
+      }
+    }
+
+    function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
+
+    function focusIconForTask(taskText='') {
+      const t = taskText.toLowerCase();
+      if (t.includes('read') || t.includes('paper') || t.includes('notes')) return '📖';
+      if (t.includes('analysis') || t.includes('data')) return '📈';
+      if (t.includes('code') || t.includes('workflow')) return '💻';
+      if (t.includes('meeting') || t.includes('advisor')) return '🗣️';
+      return '🎯';
+    }
+
+    function previewShapeForTask(task) {
+      if (!task) return 'flower1';
+      const existing = [...state.plants].reverse().find(p => p.taskId === task.id);
+      if (existing?.shape) return existing.shape;
+      if (task.seedShape) return task.seedShape;
+      const shapes = ['flower1','flower2','flower3','flower4','flower5','flower6','flower7','flower8','flower9','flower10','flower11','flower12','flower13','flower14','flower15','flower16','tree1','tree2','tree3','tree4','bush1','bush2','vine1'];
+      const h = [...(task.text || '')].reduce((a, c) => a + c.charCodeAt(0), 0);
+      return shapes[h % shapes.length];
+    }
+
+    function plantNameForTask(taskText, category, shape) {
+      const t = (taskText || '').toLowerCase();
+      if (t.includes('read')) return 'Reading Lily';
+      if (t.includes('paper') || t.includes('draft')) return 'Paper Draft Bloom';
+      if (t.includes('office hour')) return 'Office Hour Orchid';
+      if (t.includes('quiz')) return 'Quiz Clover';
+      if (t.includes('review')) return 'Review Daisy';
+      if (t.includes('code')) return 'Debug Fern';
+      const byShape = {
+        flower1: 'Rosebud', flower2: 'Bluebell', flower3: 'Sun Petal', flower4: 'Lilac Bell',
+        flower5: 'Amber Tulip', flower6: 'Peach Blossom', flower7: 'Coral Stem', flower8: 'Violet Spike',
+        flower9: 'Snow Daisy', flower10: 'Iris Bell', flower11: 'Golden Torch', flower12: 'Moon Stem',
+        flower13: 'Amber Spike', flower14: 'Frost Petal', flower15: 'Pink Stem', flower16: 'Sun Spire',
+        tree1: 'Study Oak', tree2: 'Focus Pine', tree3: 'Maple Note', tree4: 'Cherry Memo',
+        bush1: 'Clover Bush', bush2: 'Berry Bush', vine1: 'Lecture Vine', withered: 'Withered Sprout'
+      };
+      return byShape[shape] || `${category} Sprout`;
+    }
+
+    function seedAcademicExamples() {
+      const examples = [
+        'read one foundational paper closely 📖',
+        'extract 3 key insights from reading 💡',
+        'write one paragraph of synthesis ✍️',
+        'refine hypothesis statement 🔬',
+        'update research notebook entry 📔',
+        'sketch conceptual framework 🧠',
+        'review related datasets availability 🗄️',
+        'test one alternative method ⚙️',
+        'check assumptions behind model 📊',
+        'draft experiment protocol 🧪',
+        'prepare questions for seminar 🎓',
+        'rewrite confusing section clearly 📝',
+        'verify citation accuracy 🔎',
+        'organize reading highlights 🗂️',
+        'note limitations of current approach ⚠️',
+        'compare two papers critically ⚖️',
+        'update project README 📄',
+        'brainstorm future directions 🌱',
+        'write one discussion point 💬',
+        'review feedback from advisor 👀',
+        'refine figure layout ideas 🖼️',
+        'log unexpected observation 📌',
+        'plan next week priorities 🗓️',
+        'check reproducibility checklist ✅',
+        'reflect on learning progress 🌿'
+      ];
+      const shapes = ['flower1','flower2','flower3','flower4','flower5','flower6','flower7','flower8','flower9','flower10','flower11','flower12','flower13','flower14','flower15','flower16','tree1','tree2','tree3','tree4','bush1','bush2','vine1'];
+
+      const oldExampleIds = new Set(state.tasks.filter(t => t.category === 'Academic' && t.isExample).map(t => t.id));
+      state.tasks = state.tasks.filter(t => !(t.category === 'Academic' && t.isExample));
+      state.plants = state.plants.filter(p => !oldExampleIds.has(p.taskId));
+      state.sessions = state.sessions.filter(s => !oldExampleIds.has(s.taskId));
+
+      examples.forEach((name, i) => {
+        const shape = shapes[i % shapes.length];
+        const task = {
+          id: crypto.randomUUID(),
+          text: name,
+          category: 'Academic',
+          status: 'pending',
+          createdAt: Date.now() - (examples.length - i) * 60000,
+          isExample: true,
+          seedShape: shape,
+          seedPlantName: plantNameForTask(name, 'Academic', shape)
+        };
+        state.tasks.push(task);
+      });
+
+      state.activeCategory = 'Academic';
+      enforceAcademicPendingList();
+      render();
+      switchTab('garden');
+      alert(`Loaded ${examples.length} Academic tasks as pending.`);
+    }
+
+    function seedOtherGardenCases() {
+      const targetCats = categories.filter(c => c !== 'Academic');
+      const shapes = ['tree1','tree2','tree3','tree4','bush1','bush2','flower7','flower10','vine1','flower14'];
+      targetCats.forEach((cat, ci) => {
+        const existing = state.tasks.filter(t => t.category === cat && t.isDemoOther).length;
+        if (existing > 0) return;
+        const samples = [
+          { text: `${cat} quick win`, status: 'done' },
+          { text: `${cat} missed follow-up`, status: 'failed' },
+          { text: `${cat} weekly routine`, status: 'done' },
+          { text: `${cat} overdue small step`, status: 'failed' }
+        ];
+        samples.forEach((s, i) => {
+          const task = {
+            id: crypto.randomUUID(),
+            text: s.text,
+            category: cat,
+            status: s.status,
+            createdAt: Date.now() - (ci * 10 + i) * 3600000,
+            completedAt: Date.now() - (ci * 10 + i) * 3500000,
+            isDemoOther: true,
+            seedShape: shapes[(ci * 3 + i) % shapes.length]
+          };
+          state.tasks.push(task);
+          spawnPlant(task, s.status === 'done', 4, s.status === 'done' ? task.seedShape : null);
+          state.sessions.push({ taskId: task.id, outcome: s.status, secondsFocused: s.status === 'done' ? 25*60 : 8*60, at: task.completedAt });
+        });
+      });
+      save();
+    }
+
+    function enforceAcademicPendingList() {
+      const required = [
+        'read one foundational paper closely 📖',
+        'extract 3 key insights from reading 💡',
+        'write one paragraph of synthesis ✍️',
+        'refine hypothesis statement 🔬',
+        'update research notebook entry 📔',
+        'sketch conceptual framework 🧠',
+        'review related datasets availability 🗄️',
+        'test one alternative method ⚙️',
+        'check assumptions behind model 📊',
+        'draft experiment protocol 🧪',
+        'prepare questions for seminar 🎓',
+        'rewrite confusing section clearly 📝',
+        'verify citation accuracy 🔎',
+        'organize reading highlights 🗂️',
+        'note limitations of current approach ⚠️',
+        'compare two papers critically ⚖️',
+        'update project README 📄',
+        'brainstorm future directions 🌱',
+        'write one discussion point 💬',
+        'review feedback from advisor 👀',
+        'refine figure layout ideas 🖼️',
+        'log unexpected observation 📌',
+        'plan next week priorities 🗓️',
+        'check reproducibility checklist ✅',
+        'reflect on learning progress 🌿'
+      ];
+
+      const otherTasks = state.tasks.filter(t => t.category !== 'Academic');
+      const academicTasks = required.map((text, i) => {
+        const existing = state.tasks.find(t => t.category === 'Academic' && t.text === text);
+        return {
+          id: existing?.id || crypto.randomUUID(),
+          text,
+          category: 'Academic',
+          status: 'pending',
+          createdAt: existing?.createdAt || (Date.now() - (required.length - i) * 60000),
+          isExample: true
+        };
+      });
+      state.tasks = [...otherTasks, ...academicTasks];
+
+      const academicIds = new Set(academicTasks.map(t => t.id));
+      state.plants = state.plants.filter(p => !academicIds.has(p.taskId) && p.category !== 'Academic');
+      state.sessions = state.sessions.filter(s => !academicIds.has(s.taskId));
+      save();
+    }
+
+    function addTask() {
+      const text = el.taskInput.value.trim();
+      if (!text) return;
+      const category = el.cat.value;
+      const newTask = {
+        id: crypto.randomUUID(),
+        text,
+        category,
+        status: 'pending',
+        createdAt: Date.now()
+      };
+      state.tasks.unshift(newTask);
+      selectedTaskId = newTask.id;
+      el.taskInput.value = '';
+      state.activeCategory = category;
+      save();
+      render();
+    }
+
+    function adjustDurationTo(mins) {
+      if (timer) return;
+      focusDurationMin = Math.max(5, Math.min(120, mins));
+      timerSeconds = focusDurationMin * 60;
+      const pct = Math.round((focusDurationMin - 5) / 115 * 100);
+      el.floatDuration.value = String(focusDurationMin);
+      el.focusPlantBtn.style.setProperty('--pct', String(pct));
+      el.durationLabel.textContent = `Duration: ${focusDurationMin} min`;
+      el.floatDurationLabel.textContent = `${focusDurationMin} min`;
+      el.clock.textContent = fmt(timerSeconds);
+    }
+
+    function startFocus() {
+      if (timer) return;
+      if (!selectedTaskId) {
+        const firstPending = state.tasks.find(t => t.category === state.activeCategory && t.status === 'pending') || state.tasks.find(t => t.status === 'pending');
+        if (firstPending) selectedTaskId = firstPending.id;
+      }
+      if (timerSeconds <= 0) timerSeconds = focusDurationMin * 60;
+      timer = setInterval(() => {
+        timerSeconds -= 1;
+        if (timerSeconds <= 0) {
+          clearInterval(timer); timer = null; timerSeconds = 0;
+        }
+        el.clock.textContent = fmt(timerSeconds);
+      }, 1000);
+      renderMeta();
+    }
+
+    function stopFocus(reset = false) {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (reset) timerSeconds = focusDurationMin * 60;
+      el.clock.textContent = fmt(timerSeconds);
+    }
+
+    function pauseFocus() {
+      if (!timer) return;
+      stopFocus(false); // pause only, no outcome mutation
+      save();
+      renderMeta();
+    }
+
+    function finishSelected(outcome) {
+      const task = state.tasks.find(t => t.id === selectedTaskId) || state.tasks.find(t => t.status === 'pending');
+      if (!task) return alert('No task selected.');
+      applyTaskOutcome(task, outcome);
+      stopFocus(true);
+      save();
+      render();
+      switchTab('garden');
+    }
+
+    function applyTaskOutcome(task, outcome) {
+      state.plants = state.plants.filter(p => p.taskId !== task.id);
+      resolveTaskOutcome(task, outcome);
+    }
+
+    function resolveTaskOutcome(task, outcome) {
+      task.status = outcome;
+      task.completedAt = Date.now();
+      state.activeCategory = task.category;
+
+      const totalSeconds = focusDurationMin * 60;
+      const effort = Math.max(1, Math.round((totalSeconds - timerSeconds) / 300));
+      if (outcome === 'done') {
+        const xpGain = 10 + effort * 3;
+        state.xp += xpGain;
+        handleStreak();
+        spawnPlant(task, true, effort, task.seedShape || null);
+      } else {
+        spawnPlant(task, false, effort);
+      }
+
+      state.level = Math.max(1, Math.floor(state.xp / 100) + 1);
+      state.sessions.push({ taskId: task.id, outcome, secondsFocused: totalSeconds - timerSeconds, at: Date.now() });
+    }
+
+    function handleStreak() {
+      const today = new Date().toISOString().slice(0,10);
+      const y = new Date(Date.now()-86400000).toISOString().slice(0,10);
+      if (!state.lastDoneDate) state.streak = 1;
+      else if (state.lastDoneDate === today) return;
+      else if (state.lastDoneDate === y) state.streak += 1;
+      else state.streak = 1;
+      state.lastDoneDate = today;
+    }
+
+    function spawnPlant(task, healthy, effort, forcedShape = null) {
+      const positions = orderedPlantSlots();
+      const used = new Set(state.plants.filter(p => p.category === task.category).map(p => `${p.x},${p.y}`));
+      const pos = positions.find(s => !used.has(`${s.x},${s.y}`)) || positions[0] || { x: 0, y: 0 };
+      const shapes = ['flower1','flower2','flower3','flower4','flower5','flower6','flower7','flower8','flower9','flower10','flower11','flower12','flower13','flower14','flower15','flower16','tree1','tree2','tree3','tree4','bush1','bush2','vine1'];
+      const shape = healthy ? (forcedShape || shapes[Math.floor(Math.random() * shapes.length)]) : 'withered';
+      state.plants.push({
+        id: crypto.randomUUID(),
+        category: task.category,
+        x: pos.x,
+        y: pos.y,
+        status: healthy ? 'healthy' : 'withered',
+        shape,
+        plantName: plantNameForTask(task.text, task.category, shape),
+        stage: healthy ? Math.min(3, 1 + Math.floor(effort / 2) + (state.streak >= 3 ? 1 : 0)) : 1,
+        createdAt: Date.now(),
+        taskId: task.id,
+        taskText: task.text
+      });
+    }
+
+    function orderedPlantSlots() {
+      const cells = [];
+      for (let y=1; y<14; y++) {
+        for (let x=1; x<20; x++) {
+          const tileType = (x+y)%9===0 ? 'path' : (x+y)%13===0 ? 'water' : (x+y)%4===0 ? 'soil' : 'grass';
+          if (tileType === 'water' || tileType === 'path') continue;
+          if (x % 2 !== 0 || y % 2 !== 0) continue; // spacing to avoid crowding
+          cells.push({ x, y });
+        }
+      }
+      cells.sort((a,b) => (a.y - b.y) || (a.x - b.x));
+      return cells;
+    }
+
+    function regionVitality(cat) {
+      const done = state.tasks.filter(t => t.category === cat && t.status === 'done').length;
+      const failed = state.tasks.filter(t => t.category === cat && t.status === 'failed').length;
+      return Math.max(0, Math.min(100, 40 + done * 8 - failed * 5));
+    }
+
+    function switchTab(tab) {
+      const forest = tab === 'forest';
+      el.forestView.classList.toggle('hidden', !forest);
+      el.gardenView.classList.toggle('hidden', forest);
+      el.tabForest.classList.toggle('active', forest);
+      el.tabGarden.classList.toggle('active', !forest);
+      el.gardenPickerWrap.classList.toggle('hidden', forest);
+      if (forest) applyForestCamera();
+      else applyCamera();
+    }
+
+    function setZoom(next) {
+      if (!el.forestView.classList.contains('hidden')) {
+        forestCamera.scale = Math.max(0.6, Math.min(2.2, +next.toFixed(2)));
+        applyForestCamera();
+        return;
+      }
+      camera.scale = Math.max(0.7, Math.min(2.4, +next.toFixed(2)));
+      applyCamera();
+    }
+
+    function resetCamera() {
+      if (!el.forestView.classList.contains('hidden')) {
+        forestCamera.x = 0; forestCamera.y = 2; forestCamera.scale = 1.48;
+        applyForestCamera();
+        return;
+      }
+      camera.x = 0;
+      camera.y = 0;
+      camera.scale = 1;
+      applyCamera();
+    }
+
+    function applyCamera() {
+      el.gardenCamera.style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
+      el.zoomLabel.textContent = `${Math.round(camera.scale * 100)}%`;
+    }
+
+    function applyForestCamera() {
+      const fc = document.getElementById('forestCamera');
+      if (!fc) return;
+      fc.style.transform = `translate(${forestCamera.x}px, ${forestCamera.y}px) scale(${forestCamera.scale})`;
+      el.zoomLabel.textContent = `${Math.round(forestCamera.scale * 100)}%`;
+    }
+
+    function bindCameraDrag() {
+      let drag = false, sx = 0, sy = 0;
+      el.gardenWrap.addEventListener('pointerdown', (e) => {
+        drag = true;
+        sx = e.clientX - camera.x;
+        sy = e.clientY - camera.y;
+        el.gardenWrap.setPointerCapture(e.pointerId);
+      });
+      el.gardenWrap.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        camera.x = e.clientX - sx;
+        camera.y = e.clientY - sy;
+        applyCamera();
+      });
+      const end = () => { drag = false; };
+      el.gardenWrap.addEventListener('pointerup', end);
+      el.gardenWrap.addEventListener('pointercancel', end);
+      el.gardenWrap.addEventListener('wheel', (e) => {
+        if (el.gardenView.classList.contains('hidden')) return;
+        e.preventDefault();
+        setZoom(camera.scale + (e.deltaY < 0 ? 0.08 : -0.08));
+      }, { passive: false });
+    }
+
+    function bindForestDrag() {
+      const board = document.getElementById('combinedForestBoard');
+      if (!board || board.dataset.dragBound === '1') return;
+      board.dataset.dragBound = '1';
+      let drag = false, sx = 0, sy = 0;
+      board.addEventListener('pointerdown', (e) => {
+        const interactive = e.target.closest('.f-tile, .f-plant, .f-tree, .region-tag');
+        if (interactive) return; // allow click-through to open specific garden
+        drag = true;
+        sx = e.clientX - forestCamera.x;
+        sy = e.clientY - forestCamera.y;
+        board.setPointerCapture(e.pointerId);
+      });
+      board.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        forestCamera.x = e.clientX - sx;
+        forestCamera.y = e.clientY - sy;
+        applyForestCamera();
+      });
+      const end = () => { drag = false; };
+      board.addEventListener('pointerup', end);
+      board.addEventListener('pointercancel', end);
+      board.addEventListener('wheel', (e) => {
+        if (el.forestView.classList.contains('hidden')) return;
+        e.preventDefault();
+        setZoom(forestCamera.scale + (e.deltaY < 0 ? 0.08 : -0.08));
+      }, { passive: false });
+    }
+
+    function fmt(s) {
+      const m = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      return `${m}:${ss}`;
+    }
+
+    function renderForest() {
+      el.forestGrid.innerHTML = '';
+      const wrap = document.createElement('div');
+      wrap.className = 'forest';
+      wrap.innerHTML = `
+        <div class="overview-bar">
+          <b>Overview</b>
+          <div class="overview-tabs"><button>Day</button><button>Week</button><button>Month</button><button>Year</button></div>
+          <span class="chip">${new Date().getUTCFullYear()}</span>
+        </div>
+      `;
+      const board = document.createElement('div');
+      board.className = 'combined-forest';
+      board.id = 'combinedForestBoard';
+      const fc = document.createElement('div');
+      fc.className = 'forest-camera';
+      fc.id = 'forestCamera';
+      const focusBg = document.createElement('div');
+      focusBg.className = 'forest-focus-bg';
+      fc.appendChild(focusBg);
+      const base = document.createElement('div');
+      base.className = 'forest-base';
+      fc.appendChild(base);
+
+      focusBg.style.left = `${Math.round((board.clientWidth || 640) * 0.5)}px`;
+      focusBg.style.top = `${Math.round((board.clientHeight || 520) * 0.26)}px`;
+      focusBg.style.transform = 'translateX(-50%)';
+      board.appendChild(fc);
+      wrap.appendChild(board);
+      el.forestGrid.appendChild(wrap);
+
+      const tw = 36, th = 18;
+      const boardW = board.clientWidth || 640;
+      const boardH = board.clientHeight || 520;
+      const cx = Math.round(boardW * 0.5);
+      const cy = Math.round(boardH * 0.38);
+      const clusters = {
+        Academic: { ox: -6, oy: 0, w: 5, h: 4 },
+        Health: { ox: 1, oy: -2, w: 4, h: 4 },
+        Work: { ox: 7, oy: -1, w: 5, h: 4 },
+        Social: { ox: -2, oy: 5, w: 4, h: 4 },
+        Growth: { ox: 4, oy: 6, w: 5, h: 4 },
+        Creative: { ox: 10, oy: 5, w: 4, h: 4 }
+      };
+
+      // soft cloud ring around lands (non-overlapping)
+      [
+        {x:120,y:78},
+        {x:230,y:62},
+        {x:360,y:56},
+        {x:500,y:70},
+        {x:590,y:120},
+        {x:610,y:250},
+        {x:440,y:390},
+        {x:220,y:405}
+      ].forEach((p, i) => {
+        const c = document.createElement('div');
+        c.className = 'f-cloud';
+        c.style.left = `${p.x}px`;
+        c.style.top = `${p.y}px`;
+        c.style.animationDuration = `${22 + i * 2}s`;
+        c.style.animationDelay = `${i * 0.8}s`;
+        fc.appendChild(c);
+      });
+
+      categories.forEach(cat => {
+        const c = clusters[cat] || { ox: 0, oy: 0, w: 4, h: 4 };
+        const clusterLayer = document.createElement('div');
+        clusterLayer.className = `cluster ${cat.toLowerCase()}`;
+        fc.appendChild(clusterLayer);
+
+        for (let y=0; y<c.h; y++) {
+          for (let x=0; x<c.w; x++) {
+            if ((x===0&&y===0) || (x===c.w-1&&y===c.h-1&&cat==='Creative') || (x===0&&y===c.h-1&&cat==='Social')) continue;
+            const left = cx + ((c.ox + x) - (c.oy + y)) * (tw/2);
+            const top = cy + ((c.ox + x) + (c.oy + y)) * (th/2);
+            const openGarden = () => {
+              state.activeCategory = cat;
+              save();
+              renderGarden();
+              switchTab('garden');
+            };
+
+            const side = document.createElement('div');
+            side.className = 'f-tile side';
+            side.style.left = `${left - 18}px`;
+            side.style.top = `${top + 8}px`;
+            side.onclick = openGarden;
+            clusterLayer.appendChild(side);
+
+            const topTile = document.createElement('div');
+            topTile.className = 'f-tile';
+            topTile.style.left = `${left - 18}px`;
+            topTile.style.top = `${top}px`;
+            topTile.onclick = openGarden;
+            clusterLayer.appendChild(topTile);
+
+            if ((x + y) % 3 === 0) {
+              const t = document.createElement('div');
+              t.className = `f-tree ${((x+y)%2===0)?'tree1':'tree2'}`;
+              t.style.left = `${left}px`;
+              t.style.top = `${top + 5}px`;
+              t.innerHTML = '<div class="sprite"></div>';
+              t.onclick = openGarden;
+              clusterLayer.appendChild(t);
+            }
+          }
+        }
+
+        const regionPlants = state.plants.filter(p => p.category === cat).slice(0, 8);
+        regionPlants.forEach((p, i) => {
+          const x = i % c.w, y = Math.floor(i / c.w);
+          const left = cx + ((c.ox + x) - (c.oy + y)) * (tw/2);
+          const top = cy + ((c.ox + x) + (c.oy + y)) * (th/2);
+          const pl = document.createElement('div');
+          pl.className = `f-plant ${p.status === 'healthy' ? (p.shape || 'flower1') : 'withered'}`;
+          pl.style.left = `${left}px`;
+          pl.style.top = `${top + 6}px`;
+          pl.innerHTML = '<div class="sprite"></div>';
+          pl.onclick = () => {
+            state.activeCategory = cat;
+            save();
+            renderGarden();
+            switchTab('garden');
+          };
+          clusterLayer.appendChild(pl);
+
+          const k = (p.taskId || p.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+          if (p.status === 'healthy' && k % 2 === 0) {
+            const fp = document.createElement('div');
+            fp.className = 'f-particle spark';
+            fp.style.left = `${left + ((k % 5) - 2) * 2}px`;
+            fp.style.top = `${top - 6}px`;
+            fp.style.animationDelay = `${(k % 9) * 0.2}s`;
+            clusterLayer.appendChild(fp);
+          }
+          if (p.status === 'withered') {
+            const fp = document.createElement('div');
+            fp.className = 'f-particle dust';
+            fp.style.left = `${left + ((k % 5) - 2) * 2}px`;
+            fp.style.top = `${top + 2}px`;
+            fp.style.animationDelay = `${(k % 7) * 0.25}s`;
+            clusterLayer.appendChild(fp);
+          }
+        });
+
+        const tag = document.createElement('button');
+        tag.className = 'region-tag';
+        tag.textContent = `${cat} ${regionVitality(cat)}%`;
+        tag.style.left = `${cx + (c.ox - c.oy) * (tw/2) - 18}px`;
+        tag.style.top = `${cy + (c.ox + c.oy) * (th/2) - 20}px`;
+        tag.onclick = () => {
+          state.activeCategory = cat;
+          save();
+          renderGarden();
+          switchTab('garden');
+        };
+        clusterLayer.appendChild(tag);
+      });
+
+      // decorative extra islands to balance composition (left-bottom, right-top)
+      const extraIslands = [
+        { ox: -9, oy: 9, w: 3, h: 3, cls: 'social' },
+        { ox: 12, oy: -5, w: 3, h: 3, cls: 'creative' }
+      ];
+      extraIslands.forEach(ex => {
+        const layer = document.createElement('div');
+        layer.className = `cluster ${ex.cls}`;
+        fc.appendChild(layer);
+        for (let y = 0; y < ex.h; y++) {
+          for (let x = 0; x < ex.w; x++) {
+            const left = cx + ((ex.ox + x) - (ex.oy + y)) * (tw / 2);
+            const top = cy + ((ex.ox + x) + (ex.oy + y)) * (th / 2);
+            const side = document.createElement('div');
+            side.className = 'f-tile side';
+            side.style.left = `${left - 18}px`;
+            side.style.top = `${top + 8}px`;
+            layer.appendChild(side);
+            const topTile = document.createElement('div');
+            topTile.className = 'f-tile';
+            topTile.style.left = `${left - 18}px`;
+            topTile.style.top = `${top}px`;
+            layer.appendChild(topTile);
+          }
+        }
+      });
+
+      // default framing to match requested ~150% centered overview
+      forestCamera.x = 0;
+      forestCamera.y = 2;
+      forestCamera.scale = 1.48;
+      bindForestDrag();
+      applyForestCamera();
+    }
+
+    function isoPos(x, y) {
+      const tw = 48, th = 24;
+      const centerX = 490;
+      const topY = 54;
+      return { left: centerX + (x - y) * (tw / 2), top: topY + (x + y) * (th / 2) };
+    }
+
+    function renderGarden() {
+      el.gardenJump.value = state.activeCategory;
+      const g = el.gardenGrid;
+      g.innerHTML = '';
+
+      const focusBg = document.createElement('div');
+      focusBg.className = 'garden-focus-bg';
+      g.appendChild(focusBg);
+
+      const base = document.createElement('div');
+      base.className = 'land-base';
+      g.appendChild(base);
+
+      [{x:54,y:10},{x:434,y:8},{x:806,y:12}].forEach(c => {
+        const cloud = document.createElement('div');
+        cloud.className = 'g-cloud';
+        cloud.style.left = `${c.x}px`;
+        cloud.style.top = `${c.y}px`;
+        g.appendChild(cloud);
+      });
+
+      for (let y=0; y<14; y++) {
+        for (let x=0; x<20; x++) {
+          const tile = document.createElement('div');
+          const t = (x+y)%9===0 ? 'path' : (x+y)%13===0 ? 'water' : (x+y)%4===0 ? 'soil' : 'grass';
+          const p = isoPos(x, y);
+          tile.className = `tile ${t}`;
+          tile.style.left = `${p.left - 24}px`;
+          tile.style.top = `${p.top - 1}px`;
+          tile.style.zIndex = String(20 + (y * 20 + x) * 2);
+
+          const side = document.createElement('div');
+          side.className = `tile-side ${t}`;
+          side.style.left = `${p.left - 24}px`;
+          side.style.top = `${p.top + 12}px`;
+          side.style.zIndex = String(19 + (y * 20 + x) * 2);
+
+          g.appendChild(side);
+          g.appendChild(tile);
+
+          // intentionally no random deco dots on land tiles
+        }
+      }
+
+      // removed noisy micro plot markers/fences for cleaner land tiles
+
+      const treeSpots = [{x:1,y:1,t:'tree1'},{x:16,y:2,t:'tree2'},{x:15,y:11,t:'tree1'},{x:3,y:12,t:'tree2'}];
+      treeSpots.forEach(ts => {
+        const p = isoPos(ts.x, ts.y);
+        const t = document.createElement('div');
+        t.className = `g-tree ${ts.t}`;
+        t.style.left = `${p.left}px`;
+        t.style.top = `${p.top + 8}px`;
+        t.innerHTML = '<div class="sprite"></div>';
+        g.appendChild(t);
+      });
+
+      const ordered = state.plants
+        .filter(p => p.category === state.activeCategory)
+        .sort((a, b) => {
+          const ta = state.tasks.find(t => t.id === a.taskId)?.createdAt || a.createdAt || 0;
+          const tb = state.tasks.find(t => t.id === b.taskId)?.createdAt || b.createdAt || 0;
+          return ta - tb;
+        });
+
+      const slots = orderedPlantSlots();
+      ordered.forEach((p, i) => {
+          const plant = document.createElement('div');
+          const slot = slots[i % slots.length] || { x: 0, y: 0 };
+          const point = isoPos(slot.x, slot.y);
+          plant.className = `plant ${p.status === 'healthy' ? `${p.shape || 'flower1'} s${p.stage}` : 'withered'}`;
+          plant.style.left = `${point.left}px`;
+          plant.style.top = `${point.top + 10}px`;
+          plant.style.zIndex = String(1200 + (slot.y * 20 + slot.x));
+          const label = document.createElement('div');
+          label.className = 'plant-label';
+          label.textContent = p.plantName || p.taskText || 'Task';
+          const sprite = document.createElement('div');
+          sprite.className = 'sprite';
+          plant.append(label, sprite);
+          plant.onpointerdown = (e) => e.stopPropagation();
+          plant.onclick = (e) => {
+            e.stopPropagation();
+            selectedTaskId = p.taskId;
+            state.activeCategory = p.category;
+            showPlantDetails(p);
+          };
+          g.appendChild(plant);
+
+          // occasional state particles near plants
+          const key = (p.taskId || p.id || '').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+          if (p.status === 'healthy' && key % 3 === 0) {
+            const spark = document.createElement('div');
+            spark.className = 'particle spark';
+            spark.style.left = `${point.left + ((key % 5) - 2) * 3}px`;
+            spark.style.top = `${point.top - 10 - (key % 6)}px`;
+            spark.style.animationDelay = `${(key % 8) * 0.3}s`;
+            g.appendChild(spark);
+          }
+          if (p.status === 'withered' && key % 2 === 0) {
+            const dust = document.createElement('div');
+            dust.className = 'particle dust';
+            dust.style.left = `${point.left + ((key % 7) - 3) * 2}px`;
+            dust.style.top = `${point.top + 2}px`;
+            dust.style.animationDelay = `${(key % 6) * 0.35}s`;
+            g.appendChild(dust);
+          }
+        });
+    }
+
+    function showPlantDetails(plant) {
+      selectedPlantId = plant.id;
+      const task = state.tasks.find(t => t.id === plant.taskId) || null;
+      const session = [...state.sessions].reverse().find(s => s.taskId === plant.taskId) || null;
+      const when = session?.at || task?.completedAt || plant.createdAt;
+      const minutes = session ? Math.max(1, Math.round((session.secondsFocused || 0) / 60)) : null;
+
+      el.infoTask.textContent = task?.text || plant.taskText || 'Task name unavailable';
+      el.infoPlantName.textContent = `Plant: ${plant.plantName || plantNameForTask(task?.text || plant.taskText || '', task?.category || plant.category || 'Garden', plant.shape || 'flower1')}`;
+      el.infoCategory.textContent = `Category: ${task?.category || plant.category || '—'}`;
+      el.infoTime.textContent = `Focused at: ${when ? new Date(when).toLocaleString() : '—'}`;
+      el.infoDuration.textContent = `Duration: ${minutes ? `${minutes} min` : 'not recorded'}`;
+      el.plantLogo.className = `logo-circle ${plant.status === 'healthy' ? '' : 'bad'}`.trim();
+      el.plantLogo.innerHTML = `<div class="plant hero-plant ${plant.status === 'healthy' ? `${plant.shape || 'flower1'}` : 'withered'}"><div class="sprite"></div></div>`;
+      el.plantModal.classList.add('open');
+    }
+
+    function renderTasks() {
+      const today = new Date().toISOString().slice(0,10);
+      const todayDone = state.tasks.filter(t => t.status === 'done' && new Date(t.completedAt || 0).toISOString().slice(0,10) === today).length;
+      el.today.textContent = todayDone;
+
+      el.taskList.innerHTML = '';
+      state.tasks
+        .filter(t => t.category === state.activeCategory)
+        .slice(0, 80)
+        .forEach(t => {
+        const row = document.createElement('div');
+        row.className = `task ${t.status === 'done' ? 'done' : ''}`;
+        const statusChip = t.status === 'done' ? '<span class="chip good">healthy</span>' : t.status === 'failed' ? '<span class="chip bad">withered</span>' : '<span class="chip">pending</span>';
+        const icon = focusIconForTask(t.text);
+        row.innerHTML = `
+          <div class="task-top">
+            <div>
+              <div class="task-title t">[${t.category}] ${t.text}</div>
+              <div class="task-focus"><button class="focus-pick ${selectedTaskId===t.id?'active':''}">${icon} Focus</button></div>
+            </div>
+            ${statusChip}
+          </div>
+          <div class="task-bottom">
+            <div class="task-actions">
+              <label class="action-check"><input class="completeChk" type="checkbox" ${t.status==='done'?'checked':''}/> ✅</label>
+              <label class="action-check bad"><input class="incompleteChk" type="checkbox" ${t.status==='failed'?'checked':''}/> ❌</label>
+              <button class="icon-btn deleteBtn" title="Delete">🗑</button>
+            </div>
+          </div>
+        `;
+        row.querySelector('.focus-pick').onclick = (e) => {
+          e.stopPropagation();
+          selectedTaskId = t.id;
+          state.activeCategory = t.category;
+          renderMeta();
+          renderTasks();
+          if (!el.gardenView.classList.contains('hidden')) renderGarden();
+        };
+        row.querySelector('.task-actions').onclick = (e) => e.stopPropagation();
+        row.querySelector('.completeChk').onchange = (e) => {
+          e.stopPropagation();
+          applyTaskOutcome(t, 'done');
+          save();
+          render();
+          switchTab('garden');
+        };
+        row.querySelector('.incompleteChk').onchange = (e) => {
+          e.stopPropagation();
+          applyTaskOutcome(t, 'failed');
+          save();
+          render();
+          switchTab('garden');
+        };
+        row.querySelector('.deleteBtn').onclick = (e) => {
+          e.stopPropagation();
+          state.tasks = state.tasks.filter(x => x.id !== t.id);
+          state.plants = state.plants.filter(p => p.taskId !== t.id);
+          state.sessions = state.sessions.filter(s => s.taskId !== t.id);
+          if (selectedTaskId === t.id) selectedTaskId = null;
+          save();
+          render();
+        };
+        el.taskList.appendChild(row);
+      });
+    }
+
+    function renderMeta() {
+      el.xp.textContent = state.xp;
+      el.level.textContent = state.level;
+      el.streak.textContent = state.streak;
+      el.xpBar.style.width = `${state.xp % 100}%`;
+      const pct = Math.round((focusDurationMin - 5) / 115 * 100);
+      el.floatDuration.value = String(focusDurationMin);
+      el.focusPlantBtn.style.setProperty('--pct', String(pct));
+      el.durationLabel.textContent = `Duration: ${focusDurationMin} min`;
+      el.floatDurationLabel.textContent = `${focusDurationMin} min`;
+      const t = state.tasks.find(x => x.id === selectedTaskId);
+      el.focusTaskLabel.textContent = t ? `Focusing: ${t.text}` : 'Focus: select a task';
+      const shape = previewShapeForTask(t);
+      el.focusPlantBtn.className = `focus-orb ${shape}`;
+      el.focusPlantBtn.innerHTML = '<div class="sprite"></div>';
+      el.clock.textContent = fmt(timerSeconds);
+    }
+
+    function render() {
+      renderMeta();
+      renderTasks();
+      renderForest();
+      renderGarden();
+      if (!el.forestView.classList.contains('hidden')) applyForestCamera();
+      else applyCamera();
+    }
+
+    seedOtherGardenCases();
+    enforceAcademicPendingList();
+    render();
+  </script>
+</body>
+</html>
