@@ -1,114 +1,29 @@
 # MyGardens 2.0 🌱
 
-A pixel-art productivity app/game where tasks and focus sessions grow (or wither) your garden.
+A single-file pixel-art productivity prototype where tasks and focus sessions become plants in an isometric garden.
 
-## Concept
+**[Open demo](https://rainscyy.github.io/MyGarden2.0/)** · HTML / CSS / JavaScript
 
-MyGardens combines:
-- **Forest-like focus feedback** (focus → growth)
-- **Notion-like task organization** (tasks by category/garden)
+## Explore
 
-Your behavior becomes a visible ecosystem:
-- ✅ Complete task → healthy plant
-- ❌ Incomplete/Fail task → withered plant
-- Over time, each garden reflects your work patterns
+Move from the forest overview into a category garden, add a task, and start a focus session. Completed and failed tasks produce different plant states. The prototype includes a floating timer, task details, and category-specific garden views.
 
----
+Task and garden state is saved in browser `localStorage`. There are no accounts or cross-device synchronization; clearing browser storage removes the local records.
 
-## Current Prototype Features
+## Run locally
 
-### Core Views
-- **Forest View**
-  - Multi-garden overview (Academic, Health, Work, Social, Growth, Creative)
-  - Click a garden island to jump to its garden view
-  - Ambient clouds + light floating animation
-  - Region vitality labels
+With Python 3 installed, from this repository:
 
-- **Garden View**
-  - Isometric pixel tile map
-  - Plants rendered by task outcome
-  - Click plant to open details modal
-  - Floating focus session widget (top-right)
-
-### Task System
-- Task categories (garden-based)
-- Category-filtered task list (shows only active garden tasks)
-- Per-task controls:
-  - Complete (healthy)
-  - Incomplete (withered)
-  - Delete
-- Focus icon per task + selection state
-
-### Focus Session
-- Floating circular widget in garden view
-- Adjustable duration slider
-- Start / Pause / Complete / Fail icon controls
-- Clicking plant opens details (not start focus)
-
-### Feedback & Visuals
-- Healthy/withered plant variants
-- Particle feedback (spark/dust)
-- Pixel cloud decorations
-- Category color-temperature variation in forest
-
----
-
-## Tech Stack
-
-- **Single-file web prototype**: `mygardens.html`
-- Pure **HTML + CSS + JavaScript**
-- No backend required for prototype
-- Local persistence via browser localStorage
-
----
-
-## Run Locally
-
-### Option A: Open directly
-Double-click `mygardens.html` in browser.
-
-### Option B: Local static server (recommended)
-```bash
-python3 -m http.server 8000
-```
-Then open:
-- `http://localhost:8000/mygardens.html`
-
----
-
-## Project Structure
-
-- `mygardens.html` → main app (UI, logic, rendering)
-- `README.md` → project documentation
-
----
-
-## Git / Deployment Notes
-
-To publish to GitHub:
-```bash
-git init
-git add .
-git commit -m "Initial MyGardens app"
-git branch -M main
-git remote add origin https://github.com/<your-username>/MyGarden2.0.git
-git push -u origin main
+```sh
+python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Optional: enable GitHub Pages for static hosting.
+Open `http://localhost:8000`. The entry point is **`index.html`**, which contains the interface, styles, and interaction logic. No package installation or build step is required.
 
----
+## Design iteration
 
-## Roadmap Ideas
+This version explores a lightweight, isometric interface. [MyGarden](https://github.com/rainscyy/MyGarden) explores activity records; [3.0](https://github.com/rainscyy/MyGardens3.0) develops a React focus-and-growth loop. [Our Gardens](https://github.com/rainscyy/MyGarden4.0) extends the metaphor into shared agent activity.
 
-- Ring-based duration picker (true circular drag)
-- Seasonal palettes (spring/summer/autumn/winter)
-- Day/night cycle
-- Better sprite atlas pipeline (Aseprite export)
-- Backend sync (users, sessions, cloud save)
+These are prototype experiments, not evidence that gamification improves productivity.
 
----
-
-## License
-
-Prototype/demo use. Add an explicit license (MIT recommended) before public distribution.
+By Chunyu (Raine) Sha · [Portfolio](https://rainesha.my.canva.site/)
